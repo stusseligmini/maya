@@ -1,8 +1,4 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+
 .Python
 build/
 develop-eggs/
@@ -37,7 +33,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# Virtual environments
+
 .env
 .venv
 env/
@@ -46,50 +42,8 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Docker
-.dockerignore
-
-# Logs
-logs/
-*.log
-
-# Environment variables
-.env.local
-.env.development
-.env.staging
-.env.production
-
-# Database
-*.db
-*.sqlite3
+main
 
 # Temporary files
 tmp/
 temp/
-test_basic.py
-FIXED_ISSUES.md
-
-# Configuration files with secrets
-config/secrets.yml
-config/production.yml
-
-# AI model cache
-models/cache/
-*.pkl
-*.model
