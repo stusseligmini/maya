@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  maya-api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile.dev
+    ports:
+      - "8000:8000"
+      - "8090:8090"
+    environment:
+      - DEBUG=true
+      - DATABASE_URL=postgresql://maya:maya@postgres:5432/maya
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - LOG_LEVEL=DEBUG
+      - JSON_LOGS=false
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+      - ./models:/app/models
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=maya
+      - POSTGRES_USER=maya
+      - POSTGRES_PASSWORD=maya
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

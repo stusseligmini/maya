@@ -1,0 +1,1 @@
+"""FastAPI application and API endpoints."""
