@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Maya AI">
+    
+    <title>Maya AI - Content Creator</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- iOS specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-fullscreen" content="yes">
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .app-container {
+            max-width: 400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 0;
+        }
+        
+        .header {
+            background: rgba(124, 58, 237, 0.9);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            margin: 0;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-tab.active {
+            color: white;
+            border-bottom-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.2);
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.1);
+        }
+        
+        .upload-area.dragover {
+            border-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.2);
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+        
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+        
+        .input-group input::placeholder,
+        .input-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #7c3aed;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .content-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .content-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .content-info {
+            flex: 1;
+        }
+        
+        .content-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .content-meta {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .status-published {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .floating-action {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .floating-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(124, 58, 237, 0.6);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 15px;
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+            border-radius: 10px;
+            transform: translateY(-100px);
+            transition: all 0.3s ease;
+            z-index: 3000;
+        }
+        
+        .notification.show {
+            transform: translateY(0);
+        }
+        
+        .notification.error {
+            background: rgba(220, 53, 69, 0.9);
+        }
+        
+        /* iOS specific styling */
+        @supports (-webkit-touch-callout: none) {
+            .app-container {
+                padding-top: max(20px, env(safe-area-inset-top));
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+        }
+        
+        /* Hide scrollbar */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tab {
+                font-size: 14px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>🚀 Maya AI</h1>
+            <p>Content Creation Assistant</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="showTab('upload')">📤 Upload</button>
+            <button class="nav-tab" onclick="showTab('content')">📝 Content</button>
+            <button class="nav-tab" onclick="showTab('settings')">⚙️ Settings</button>
+        </div>
+        
+        <div class="content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalContent">0</div>
+                        <div class="stat-label">Total Content</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="publishedToday">0</div>
+                        <div class="stat-label">Published Today</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🎯 Quick Actions</h3>
+                    <button class="btn" onclick="showTab('upload')">📷 Create New Content</button>
+                    <button class="btn btn-secondary" onclick="analyzePerformance()">📈 Analyze Performance</button>
+                </div>
+                
+                <div class="card">
+                    <h3>📱 Recent Activity</h3>
+                    <div id="recentActivity">
+                        <div class="content-item">
+                            <div class="content-preview">📸</div>
+                            <div class="content-info">
+                                <div class="content-title">Summer vibes post</div>
+                                <div class="content-meta">2 hours ago • <span class="status-badge status-published">Published</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upload Tab -->
+            <div id="upload" class="tab-content">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <h3>Upload Content</h3>
+                    <p>Tap to select images or videos</p>
+                    <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleFileUpload(event)">
+                </div>
+                
+                <form id="uploadForm">
+                    <div class="input-group">
+                        <label>Content Title</label>
+                        <input type="text" placeholder="Enter a catchy title..." required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Description</label>
+                        <textarea placeholder="Describe your content..." rows="3"></textarea>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Target Platforms</label>
+                        <select multiple>
+                            <option value="instagram">📸 Instagram</option>
+                            <option value="tiktok">🎵 TikTok</option>
+                            <option value="twitter">🐦 Twitter</option>
+                            <option value="fanvue">💖 Fanvue</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn">
+                        <span id="uploadBtnText">🚀 Create Content</span>
+                        <span id="uploadLoader" class="loading" style="display:none"></span>
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Content Tab -->
+            <div id="content" class="tab-content">
+                <div class="card">
+                    <h3>📝 Your Content</h3>
+                    <div id="contentList">
+                        <!-- Content items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <div class="card">
+                    <h3>⚙️ App Settings</h3>
+                    
+                    <div class="input-group">
+                        <label>🔔 Push Notifications</label>
+                        <button class="btn btn-secondary" onclick="enableNotifications()">Enable Notifications</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>🎨 Content Style</label>
+                        <select>
+                            <option>Professional</option>
+                            <option>Casual</option>
+                            <option>Creative</option>
+                            <option>Minimal</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>🌐 Default Platforms</label>
+                        <select multiple>
+                            <option value="instagram">📸 Instagram</option>
+                            <option value="tiktok">🎵 TikTok</option>
+                            <option value="twitter">🐦 Twitter</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn">💾 Save Settings</button>
+                    
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <p style="text-align: center; opacity: 0.7; font-size: 14px;">
+                            Maya AI v1.0.0<br>
+                            Made with ❤️ for content creators
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating Action Button -->
+    <button class="floating-action" onclick="showTab('upload')" title="Create new content">
+        ➕
+    </button>
+    
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+    
+    <script>
+        // PWA Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(registration => {
+                    console.log('📱 Maya AI PWA: Service Worker registered');
+                })
+                .catch(error => {
+                    console.log('📱 Maya AI PWA: Service Worker registration failed');
+                });
+        }
+        
+        // Tab Navigation
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load tab data
+            if (tabName === 'dashboard') {
+                loadDashboardData();
+            } else if (tabName === 'content') {
+                loadContentList();
+            }
+        }
+        
+        // Load dashboard statistics
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('totalContent').textContent = data.total_content || 0;
+                    document.getElementById('publishedToday').textContent = data.published_today || 0;
+                }
+            } catch (error) {
+                console.log('Failed to load dashboard data');
+            }
+        }
+        
+        // File upload handling
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                showNotification(`📎 ${files.length} file(s) selected`, 'success');
+            }
+        }
+        
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('uploadBtnText');
+            const loader = document.getElementById('uploadLoader');
+            
+            btn.style.display = 'none';
+            loader.style.display = 'inline-block';
+            
+            // Simulate upload
+            setTimeout(() => {
+                btn.style.display = 'inline-block';
+                loader.style.display = 'none';
+                showNotification('🎉 Content uploaded successfully!', 'success');
+                showTab('content');
+            }, 2000);
+        });
+        
+        // Load content list
+        async function loadContentList() {
+            const contentList = document.getElementById('contentList');
+            contentList.innerHTML = `
+                <div class="content-item">
+                    <div class="content-preview">🎨</div>
+                    <div class="content-info">
+                        <div class="content-title">AI Generated Art</div>
+                        <div class="content-meta">1 hour ago • <span class="status-badge status-pending">Processing</span></div>
+                    </div>
+                </div>
+                <div class="content-item">
+                    <div class="content-preview">📸</div>
+                    <div class="content-info">
+                        <div class="content-title">Product Photography</div>
+                        <div class="content-meta">3 hours ago • <span class="status-badge status-published">Published</span></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notification.className = `notification ${type}`;
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Enable push notifications
+        async function enableNotifications() {
+            if ('Notification' in window && 'serviceWorker' in navigator) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    showNotification('🔔 Notifications enabled!', 'success');
+                } else {
+                    showNotification('❌ Notifications denied', 'error');
+                }
+            }
+        }
+        
+        // Performance analysis
+        function analyzePerformance() {
+            showNotification('📊 Analyzing performance...', 'success');
+            // Simulate analysis
+            setTimeout(() => {
+                showNotification('📈 Performance report ready!', 'success');
+            }, 2000);
+        }
+        
+        // Drag and drop for upload
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                showNotification(`📎 ${files.length} file(s) dropped`, 'success');
+            }
+        });
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            
+            // Add to home screen prompt for iOS
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // Show install banner
+                showNotification('📱 Tap to install Maya AI app!', 'success');
+            });
+        });
+        
+        // Haptic feedback for iOS
+        function hapticFeedback() {
+            if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+                navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            }
+        }
+        
+        // Add haptic feedback to buttons
+        document.querySelectorAll('.btn, .nav-tab, .floating-action').forEach(btn => {
+            btn.addEventListener('click', hapticFeedback);
+        });
+    </script>
+</body>
+</html>

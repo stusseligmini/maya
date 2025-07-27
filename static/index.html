@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maya AI - Content Optimization Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(16px) saturate(180%);
+            background-color: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Dashboard Component
+        function Dashboard() {
+            const [stats, setStats] = useState({
+                totalContent: 0,
+                processed: 0,
+                published: 0,
+                revenue: 0
+            });
+            const [loading, setLoading] = useState(true);
+            const [systemHealth, setSystemHealth] = useState('healthy');
+
+            useEffect(() => {
+                // Fetch system stats
+                fetch('/health')
+                    .then(res => res.json())
+                    .then(data => {
+                        setSystemHealth(data.status);
+                        setLoading(false);
+                    })
+                    .catch(() => {
+                        setLoading(false);
+                        setSystemHealth('error');
+                    });
+
+                // Simulate some stats for demo
+                setTimeout(() => {
+                    setStats({
+                        totalContent: 1247,
+                        processed: 892,
+                        published: 654,
+                        revenue: 25670
+                    });
+                }, 1000);
+            }, []);
+
+            const StatCard = ({ title, value, change, icon, color }) => (
+                <div className={`bg-white rounded-xl shadow-lg p-6 card-hover ${loading ? 'animate-pulse' : ''}`}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium">{title}</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                                {loading ? '---' : value.toLocaleString()}
+                            </p>
+                            <p className={`text-sm ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <i className={`fas fa-arrow-${change >= 0 ? 'up' : 'down'} mr-1`}></i>
+                                {Math.abs(change)}% fra i går
+                            </p>
+                        </div>
+                        <div className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center text-white`}>
+                            <i className={`fas ${icon} text-xl`}></i>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <header className="gradient-bg text-white shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center py-6">
+                                <div className="flex items-center">
+                                    <i className="fas fa-robot text-3xl mr-3"></i>
+                                    <div>
+                                        <h1 className="text-2xl font-bold">Maya AI</h1>
+                                        <p className="text-purple-200">Content Optimization Dashboard</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                        systemHealth === 'healthy' ? 'bg-green-500 text-white' : 
+                                        systemHealth === 'error' ? 'bg-red-500 text-white' : 
+                                        'bg-yellow-500 text-white'
+                                    }`}>
+                                        <i className={`fas fa-circle mr-2 ${
+                                            systemHealth === 'healthy' ? 'text-green-200' : 
+                                            systemHealth === 'error' ? 'text-red-200' : 
+                                            'text-yellow-200'
+                                        }`}></i>
+                                        System {systemHealth}
+                                    </div>
+                                    <button className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors">
+                                        <i className="fas fa-cog mr-2"></i>
+                                        Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <StatCard 
+                                title="Total Content" 
+                                value={stats.totalContent} 
+                                change={12} 
+                                icon="fa-images" 
+                                color="bg-blue-500" 
+                            />
+                            <StatCard 
+                                title="AI Processed" 
+                                value={stats.processed} 
+                                change={8} 
+                                icon="fa-brain" 
+                                color="bg-purple-500" 
+                            />
+                            <StatCard 
+                                title="Published" 
+                                value={stats.published} 
+                                change={15} 
+                                icon="fa-share-alt" 
+                                color="bg-green-500" 
+                            />
+                            <StatCard 
+                                title="Revenue ($)" 
+                                value={stats.revenue} 
+                                change={23} 
+                                icon="fa-dollar-sign" 
+                                color="bg-yellow-500" 
+                            />
+                        </div>
+
+                        {/* Action Cards */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                            <ActionCard 
+                                title="Upload Content"
+                                description="Add new images or videos for AI optimization"
+                                icon="fa-cloud-upload-alt"
+                                color="bg-blue-500"
+                                action={() => window.location.href = '/upload'}
+                            />
+                            <ActionCard 
+                                title="AI Analysis"
+                                description="Run AI analysis on your content library"
+                                icon="fa-magic"
+                                color="bg-purple-500"
+                                action={() => window.location.href = '/analytics'}
+                            />
+                            <ActionCard 
+                                title="Publish Content"
+                                description="Publish optimized content to social platforms"
+                                icon="fa-rocket"
+                                color="bg-green-500"
+                                action={() => alert('Publishing feature coming soon!')}
+                            />
+                        </div>
+
+                        {/* Feature Showcase */}
+                        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-6">🚀 Maya AI Features</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <FeatureCard 
+                                    icon="fa-image" 
+                                    title="AI Image Generation" 
+                                    description="Automatic image creation with Fooocus"
+                                />
+                                <FeatureCard 
+                                    icon="fa-edit" 
+                                    title="Smart Captions" 
+                                    description="GPT-powered caption generation"
+                                />
+                                <FeatureCard 
+                                    icon="fa-shield-alt" 
+                                    title="Content Moderation" 
+                                    description="NSFW detection and filtering"
+                                />
+                                <FeatureCard 
+                                    icon="fa-telegram" 
+                                    title="Telegram Review" 
+                                    description="Review workflow via Telegram bot"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Platform Integration */}
+                        <div className="bg-white rounded-xl shadow-lg p-8">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-6">📱 Platform Integration</h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                <PlatformCard name="Instagram" icon="fa-instagram" color="bg-pink-500" />
+                                <PlatformCard name="TikTok" icon="fa-tiktok" color="bg-black" />
+                                <PlatformCard name="Twitter" icon="fa-twitter" color="bg-blue-400" />
+                                <PlatformCard name="Fanvue" icon="fa-star" color="bg-purple-600" />
+                                <PlatformCard name="Snapchat" icon="fa-snapchat" color="bg-yellow-400" />
+                                <PlatformCard name="YouTube" icon="fa-youtube" color="bg-red-600" />
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        // Action Card Component
+        function ActionCard({ title, description, icon, color, action }) {
+            return (
+                <div className="bg-white rounded-xl shadow-lg p-6 card-hover cursor-pointer" onClick={action}>
+                    <div className="flex items-center mb-4">
+                        <div className={`w-10 h-10 ${color} rounded-lg flex items-center justify-center text-white mr-3`}>
+                            <i className={`fas ${icon}`}></i>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                    </div>
+                    <p className="text-gray-600 mb-4">{description}</p>
+                    <button className={`w-full ${color} text-white py-2 px-4 rounded-lg hover:opacity-90 transition-opacity`}>
+                        Get Started
+                    </button>
+                </div>
+            );
+        }
+
+        // Feature Card Component
+        function FeatureCard({ icon, title, description }) {
+            return (
+                <div className="text-center p-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <i className={`fas ${icon} text-gray-600`}></i>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>
+                    <p className="text-sm text-gray-600">{description}</p>
+                </div>
+            );
+        }
+
+        // Platform Card Component
+        function PlatformCard({ name, icon, color }) {
+            return (
+                <div className="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div className={`w-10 h-10 ${color} rounded-lg flex items-center justify-center mx-auto mb-2 text-white`}>
+                        <i className={`fab ${icon}`}></i>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">{name}</p>
+                </div>
+            );
+        }
+
+        // Render the app
+        ReactDOM.render(<Dashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>

@@ -4,10 +4,11 @@ services:
   # Main application service
   maya-api:
     build:
-      context: .
+      context: ..
+      dockerfile: docker/Dockerfile
       target: development
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       - ENVIRONMENT=development
       - DATABASE_URL=postgresql://maya:maya@postgres:5432/maya

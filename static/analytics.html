@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maya AI - Real-time Analytics</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function AnalyticsPage() {
+            const [realTimeData, setRealTimeData] = useState(null);
+            const [activities, setActivities] = useState([]);
+            const [systemMetrics, setSystemMetrics] = useState({
+                cpu: 0,
+                memory: 0,
+                disk: 0,
+                apiRequests: 0
+            });
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                // Fetch real-time data
+                const fetchRealTimeData = async () => {
+                    try {
+                        const response = await fetch('/api/analytics/real-time');
+                        const data = await response.json();
+                        setRealTimeData(data);
+                        setActivities(data.recent_activities);
+                        setSystemMetrics(data.system_load);
+                    } catch (error) {
+                        console.error('Failed to fetch real-time data:', error);
+                    }
+                };
+
+                // Initial fetch
+                fetchRealTimeData();
+
+                // Set up real-time updates
+                const interval = setInterval(fetchRealTimeData, 5000);
+
+                // Initialize chart
+                if (chartRef.current) {
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({ length: 20 }, (_, i) => `${20 - i}s ago`),
+                            datasets: [{
+                                label: 'API Requests/min',
+                                data: Array.from({ length: 20 }, () => Math.floor(Math.random() * 200) + 50),
+                                borderColor: 'rgb(99, 102, 241)',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+
+                return () => {
+                    clearInterval(interval);
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                };
+            }, []);
+
+            const MetricCard = ({ title, value, unit, color, icon, trend }) => (
+                <div className="metric-card bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium">{title}</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                                {value}<span className="text-lg text-gray-500">{unit}</span>
+                            </p>
+                            {trend && (
+                                <p className={`text-sm ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    <i className={`fas fa-arrow-${trend > 0 ? 'up' : 'down'} mr-1`}></i>
+                                    {Math.abs(trend)}%
+                                </p>
+                            )}
+                        </div>
+                        <div className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center text-white`}>
+                            <i className={`fas ${icon} text-xl`}></i>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const ProgressBar = ({ label, value, max, color }) => (
+                <div className="mb-4">
+                    <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <span>{label}</span>
+                        <span>{value}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                            className={`h-2 rounded-full ${color}`}
+                            style={{ width: `${value}%` }}
+                        ></div>
+                    </div>
+                </div>
+            );
+
+            const ActivityItem = ({ activity }) => (
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                    <div className="flex items-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full pulse-dot mr-3"></div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                            <p className="text-xs text-gray-500">{activity.time}</p>
+                        </div>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                        {activity.user || activity.item || activity.platform || activity.status}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <header className="gradient-bg text-white shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center py-6">
+                                <div className="flex items-center">
+                                    <a href="/" className="text-white hover:text-purple-200 mr-4">
+                                        <i className="fas fa-arrow-left text-xl"></i>
+                                    </a>
+                                    <i className="fas fa-chart-line text-3xl mr-3"></i>
+                                    <div>
+                                        <h1 className="text-2xl font-bold">Real-time Analytics</h1>
+                                        <p className="text-purple-200">Live system monitoring and metrics</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="px-3 py-1 bg-green-500 rounded-full text-sm font-medium">
+                                        <i className="fas fa-circle text-green-200 mr-2 pulse-dot"></i>
+                                        Live
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {/* Real-time Metrics */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <MetricCard 
+                                title="Active Users" 
+                                value={realTimeData?.active_users || 0} 
+                                unit="" 
+                                icon="fa-users" 
+                                color="bg-blue-500" 
+                                trend={8}
+                            />
+                            <MetricCard 
+                                title="Processing Queue" 
+                                value={realTimeData?.processing_queue || 0} 
+                                unit=" items" 
+                                icon="fa-cog" 
+                                color="bg-purple-500" 
+                                trend={-5}
+                            />
+                            <MetricCard 
+                                title="API Requests" 
+                                value={realTimeData?.api_requests_per_minute || 0} 
+                                unit="/min" 
+                                icon="fa-exchange-alt" 
+                                color="bg-green-500" 
+                                trend={12}
+                            />
+                            <MetricCard 
+                                title="Response Time" 
+                                value="142" 
+                                unit="ms" 
+                                icon="fa-clock" 
+                                color="bg-yellow-500" 
+                                trend={-3}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                            {/* API Requests Chart */}
+                            <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">API Traffic</h3>
+                                <canvas ref={chartRef} height="100"></canvas>
+                            </div>
+
+                            {/* System Load */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">System Load</h3>
+                                <div className="space-y-4">
+                                    <ProgressBar 
+                                        label="CPU Usage" 
+                                        value={systemMetrics.cpu} 
+                                        color="bg-blue-500"
+                                    />
+                                    <ProgressBar 
+                                        label="Memory Usage" 
+                                        value={systemMetrics.memory} 
+                                        color="bg-green-500"
+                                    />
+                                    <ProgressBar 
+                                        label="Disk Usage" 
+                                        value={systemMetrics.disk} 
+                                        color="bg-yellow-500"
+                                    />
+                                </div>
+                                
+                                <div className="mt-6 pt-4 border-t border-gray-200">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-500">Server Uptime</span>
+                                        <span className="font-medium text-gray-900">2d 14h 32m</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Recent Activity */}
+                            <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
+                                    <div className="flex items-center text-sm text-gray-500">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full pulse-dot mr-2"></div>
+                                        Live updates
+                                    </div>
+                                </div>
+                                <div className="max-h-96 overflow-y-auto">
+                                    {activities.map((activity, index) => (
+                                        <ActivityItem key={index} activity={activity} />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Platform Stats */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">Platform Performance</h3>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
+                                        <div className="flex items-center">
+                                            <i className="fab fa-instagram text-pink-500 mr-3"></i>
+                                            <span className="font-medium">Instagram</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-gray-900">234</p>
+                                            <p className="text-xs text-gray-500">posts</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center">
+                                            <i className="fab fa-tiktok text-black mr-3"></i>
+                                            <span className="font-medium">TikTok</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-gray-900">189</p>
+                                            <p className="text-xs text-gray-500">videos</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                        <div className="flex items-center">
+                                            <i className="fab fa-twitter text-blue-400 mr-3"></i>
+                                            <span className="font-medium">Twitter</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-gray-900">156</p>
+                                            <p className="text-xs text-gray-500">tweets</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                                        <div className="flex items-center">
+                                            <i className="fas fa-star text-purple-600 mr-3"></i>
+                                            <span className="font-medium">Fanvue</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-gray-900">75</p>
+                                            <p className="text-xs text-gray-500">posts</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-6 pt-4 border-t border-gray-200">
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-green-600">$25,670</p>
+                                        <p className="text-sm text-gray-500">Total Revenue</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<AnalyticsPage />, document.getElementById('root'));
+    </script>
+</body>
+</html>

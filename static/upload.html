@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maya AI - Content Upload</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .drag-area {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        
+        .drag-area.active {
+            border-color: #6366f1;
+            background-color: #f8fafc;
+        }
+        
+        .step-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .step-complete {
+            background: #10b981;
+            color: white;
+        }
+        
+        .step-pending {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function UploadPage() {
+            const [currentStep, setCurrentStep] = useState(1);
+            const [files, setFiles] = useState([]);
+            const [isDragging, setIsDragging] = useState(false);
+            const [formData, setFormData] = useState({
+                title: '',
+                description: '',
+                contentType: 'image',
+                platforms: [],
+                keywords: '',
+                aiGenerate: false,
+                autoModerate: true,
+                schedulePost: false
+            });
+            const fileInputRef = useRef(null);
+
+            const platforms = [
+                { id: 'instagram', name: 'Instagram', icon: 'fa-instagram', color: 'text-pink-500' },
+                { id: 'tiktok', name: 'TikTok', icon: 'fa-tiktok', color: 'text-black' },
+                { id: 'twitter', name: 'Twitter', icon: 'fa-twitter', color: 'text-blue-400' },
+                { id: 'fanvue', name: 'Fanvue', icon: 'fa-star', color: 'text-purple-600' },
+                { id: 'snapchat', name: 'Snapchat', icon: 'fa-snapchat', color: 'text-yellow-400' },
+                { id: 'youtube', name: 'YouTube', icon: 'fa-youtube', color: 'text-red-600' }
+            ];
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                setIsDragging(true);
+            };
+
+            const handleDragLeave = (e) => {
+                e.preventDefault();
+                setIsDragging(false);
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const droppedFiles = Array.from(e.dataTransfer.files);
+                setFiles(prev => [...prev, ...droppedFiles]);
+            };
+
+            const handleFileSelect = (e) => {
+                const selectedFiles = Array.from(e.target.files);
+                setFiles(prev => [...prev, ...selectedFiles]);
+            };
+
+            const removeFile = (index) => {
+                setFiles(prev => prev.filter((_, i) => i !== index));
+            };
+
+            const togglePlatform = (platformId) => {
+                setFormData(prev => ({
+                    ...prev,
+                    platforms: prev.platforms.includes(platformId)
+                        ? prev.platforms.filter(p => p !== platformId)
+                        : [...prev.platforms, platformId]
+                }));
+            };
+
+            const handleSubmit = async () => {
+                if (files.length === 0) {
+                    alert('Please select at least one file');
+                    return;
+                }
+
+                setCurrentStep(4); // Processing step
+                
+                // Simulate upload process
+                setTimeout(() => {
+                    alert('Content uploaded successfully! 🎉');
+                    // Reset form
+                    setFiles([]);
+                    setFormData({
+                        title: '',
+                        description: '',
+                        contentType: 'image',
+                        platforms: [],
+                        keywords: '',
+                        aiGenerate: false,
+                        autoModerate: true,
+                        schedulePost: false
+                    });
+                    setCurrentStep(1);
+                }, 3000);
+            };
+
+            const StepIndicator = ({ step, title, isActive, isComplete }) => (
+                <div className="flex items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                        isComplete ? 'step-complete' : isActive ? 'step-active' : 'step-pending'
+                    }`}>
+                        {isComplete ? <i className="fas fa-check"></i> : step}
+                    </div>
+                    <span className={`ml-2 text-sm font-medium ${isActive ? 'text-indigo-600' : 'text-gray-500'}`}>
+                        {title}
+                    </span>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <header className="gradient-bg text-white shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center py-6">
+                                <div className="flex items-center">
+                                    <a href="/" className="text-white hover:text-purple-200 mr-4">
+                                        <i className="fas fa-arrow-left text-xl"></i>
+                                    </a>
+                                    <i className="fas fa-cloud-upload-alt text-3xl mr-3"></i>
+                                    <div>
+                                        <h1 className="text-2xl font-bold">Content Upload</h1>
+                                        <p className="text-purple-200">Upload and optimize your content with AI</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {/* Step Indicator */}
+                        <div className="mb-8">
+                            <div className="flex justify-between items-center">
+                                <StepIndicator 
+                                    step={1} 
+                                    title="Upload Files" 
+                                    isActive={currentStep === 1}
+                                    isComplete={currentStep > 1}
+                                />
+                                <div className="flex-1 h-px bg-gray-300 mx-4"></div>
+                                <StepIndicator 
+                                    step={2} 
+                                    title="Configure" 
+                                    isActive={currentStep === 2}
+                                    isComplete={currentStep > 2}
+                                />
+                                <div className="flex-1 h-px bg-gray-300 mx-4"></div>
+                                <StepIndicator 
+                                    step={3} 
+                                    title="Review" 
+                                    isActive={currentStep === 3}
+                                    isComplete={currentStep > 3}
+                                />
+                                <div className="flex-1 h-px bg-gray-300 mx-4"></div>
+                                <StepIndicator 
+                                    step={4} 
+                                    title="Process" 
+                                    isActive={currentStep === 4}
+                                    isComplete={false}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Step 1: File Upload */}
+                        {currentStep === 1 && (
+                            <div className="bg-white rounded-xl shadow-lg p-8">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Your Content</h2>
+                                
+                                {/* Drag and Drop Area */}
+                                <div 
+                                    className={`drag-area p-8 rounded-lg text-center mb-6 ${isDragging ? 'active' : ''}`}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                >
+                                    <i className="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                    <p className="text-lg font-medium text-gray-700 mb-2">
+                                        Drag and drop your files here
+                                    </p>
+                                    <p className="text-gray-500 mb-4">or</p>
+                                    <button 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                                    >
+                                        Choose Files
+                                    </button>
+                                    <input 
+                                        ref={fileInputRef}
+                                        type="file" 
+                                        multiple 
+                                        accept="image/*,video/*"
+                                        onChange={handleFileSelect}
+                                        className="hidden"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-4">
+                                        Supports: JPEG, PNG, MP4, MOV (Max 100MB per file)
+                                    </p>
+                                </div>
+
+                                {/* File List */}
+                                {files.length > 0 && (
+                                    <div className="mb-6">
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Selected Files</h3>
+                                        <div className="space-y-2">
+                                            {files.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                                                    <div className="flex items-center">
+                                                        <i className={`fas ${file.type.startsWith('image/') ? 'fa-image' : 'fa-video'} text-indigo-500 mr-3`}></i>
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">{file.name}</p>
+                                                            <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => removeFile(index)}
+                                                        className="text-red-500 hover:text-red-700"
+                                                    >
+                                                        <i className="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {files.length > 0 && (
+                                    <div className="flex justify-end">
+                                        <button 
+                                            onClick={() => setCurrentStep(2)}
+                                            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                                        >
+                                            Next Step
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Step 2: Configuration */}
+                        {currentStep === 2 && (
+                            <div className="bg-white rounded-xl shadow-lg p-8">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6">Configure Your Content</h2>
+                                
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Basic Info */}
+                                    <div>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                                                <input 
+                                                    type="text"
+                                                    value={formData.title}
+                                                    onChange={(e) => setFormData(prev => ({...prev, title: e.target.value}))}
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                                    placeholder="Enter content title"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                                <textarea 
+                                                    value={formData.description}
+                                                    onChange={(e) => setFormData(prev => ({...prev, description: e.target.value}))}
+                                                    rows={4}
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                                    placeholder="Describe your content"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Keywords</label>
+                                                <input 
+                                                    type="text"
+                                                    value={formData.keywords}
+                                                    onChange={(e) => setFormData(prev => ({...prev, keywords: e.target.value}))}
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                                    placeholder="hashtags, keywords, etc."
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Platform Selection */}
+                                    <div>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Target Platforms</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {platforms.map(platform => (
+                                                <div 
+                                                    key={platform.id}
+                                                    onClick={() => togglePlatform(platform.id)}
+                                                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                                                        formData.platforms.includes(platform.id) 
+                                                            ? 'border-indigo-500 bg-indigo-50' 
+                                                            : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <i className={`fab ${platform.icon} text-xl ${platform.color} mr-3`}></i>
+                                                        <span className="font-medium text-gray-900">{platform.name}</span>
+                                                    </div>
+                                                    {formData.platforms.includes(platform.id) && (
+                                                        <i className="fas fa-check text-indigo-500 float-right"></i>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* AI Options */}
+                                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-4">AI Features</h3>
+                                    <div className="space-y-3">
+                                        <label className="flex items-center">
+                                            <input 
+                                                type="checkbox"
+                                                checked={formData.aiGenerate}
+                                                onChange={(e) => setFormData(prev => ({...prev, aiGenerate: e.target.checked}))}
+                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                            />
+                                            <span className="ml-2 text-gray-700">Generate AI captions</span>
+                                        </label>
+                                        <label className="flex items-center">
+                                            <input 
+                                                type="checkbox"
+                                                checked={formData.autoModerate}
+                                                onChange={(e) => setFormData(prev => ({...prev, autoModerate: e.target.checked}))}
+                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                            />
+                                            <span className="ml-2 text-gray-700">Auto-moderate content</span>
+                                        </label>
+                                        <label className="flex items-center">
+                                            <input 
+                                                type="checkbox"
+                                                checked={formData.schedulePost}
+                                                onChange={(e) => setFormData(prev => ({...prev, schedulePost: e.target.checked}))}
+                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                            />
+                                            <span className="ml-2 text-gray-700">Schedule posting</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between mt-6">
+                                    <button 
+                                        onClick={() => setCurrentStep(1)}
+                                        className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                                    >
+                                        Back
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentStep(3)}
+                                        className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                                    >
+                                        Review
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 3: Review */}
+                        {currentStep === 3 && (
+                            <div className="bg-white rounded-xl shadow-lg p-8">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6">Review & Submit</h2>
+                                
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Content Details</h3>
+                                        <dl className="space-y-3">
+                                            <div>
+                                                <dt className="text-sm font-medium text-gray-500">Title</dt>
+                                                <dd className="text-gray-900">{formData.title || 'Not specified'}</dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-sm font-medium text-gray-500">Description</dt>
+                                                <dd className="text-gray-900">{formData.description || 'Not specified'}</dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-sm font-medium text-gray-500">Keywords</dt>
+                                                <dd className="text-gray-900">{formData.keywords || 'Not specified'}</dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-sm font-medium text-gray-500">Files</dt>
+                                                <dd className="text-gray-900">{files.length} file(s) selected</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Settings</h3>
+                                        <dl className="space-y-3">
+                                            <div>
+                                                <dt className="text-sm font-medium text-gray-500">Target Platforms</dt>
+                                                <dd className="text-gray-900">
+                                                    {formData.platforms.length > 0 
+                                                        ? formData.platforms.join(', ') 
+                                                        : 'None selected'
+                                                    }
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-sm font-medium text-gray-500">AI Features</dt>
+                                                <dd className="text-gray-900">
+                                                    <div className="space-y-1">
+                                                        {formData.aiGenerate && <span className="block">✓ AI Caption Generation</span>}
+                                                        {formData.autoModerate && <span className="block">✓ Auto Moderation</span>}
+                                                        {formData.schedulePost && <span className="block">✓ Scheduled Posting</span>}
+                                                    </div>
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between mt-8">
+                                    <button 
+                                        onClick={() => setCurrentStep(2)}
+                                        className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                                    >
+                                        Back
+                                    </button>
+                                    <button 
+                                        onClick={handleSubmit}
+                                        className="bg-green-600 text-white px-8 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                    >
+                                        🚀 Upload & Process
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 4: Processing */}
+                        {currentStep === 4 && (
+                            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+                                <div className="mb-6">
+                                    <i className="fas fa-cog fa-spin text-6xl text-indigo-500 mb-4"></i>
+                                    <h2 className="text-2xl font-bold text-gray-900">Processing Your Content</h2>
+                                    <p className="text-gray-600 mt-2">Please wait while we optimize your content with AI...</p>
+                                </div>
+                                
+                                <div className="space-y-3 max-w-md mx-auto">
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-gray-700">Uploading files</span>
+                                        <i className="fas fa-check text-green-500"></i>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-gray-700">AI analysis</span>
+                                        <i className="fas fa-spinner fa-spin text-indigo-500"></i>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-gray-700">Content moderation</span>
+                                        <i className="fas fa-clock text-gray-400"></i>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-gray-700">Caption generation</span>
+                                        <i className="fas fa-clock text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<UploadPage />, document.getElementById('root'));
+    </script>
+</body>
+</html>
