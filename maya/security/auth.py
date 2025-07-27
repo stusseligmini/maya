@@ -1,12 +1,33 @@
 """Security utilities for Maya system."""
 
-import jwt
-import bcrypt
+try:
+    import jwt
+    JWT_AVAILABLE = True
+except ImportError:
+    JWT_AVAILABLE = False
+
+try:
+    import bcrypt
+    BCRYPT_AVAILABLE = True
+except ImportError:
+    BCRYPT_AVAILABLE = False
+
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
-from passlib.context import CryptContext
-from fastapi import HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+try:
+    from passlib.context import CryptContext
+    PASSLIB_AVAILABLE = True
+except ImportError:
+    PASSLIB_AVAILABLE = False
+
+try:
+    from fastapi import HTTPException, Depends, status
+    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    FASTAPI_AVAILABLE = False
+
 import secrets
 import re
 from dataclasses import dataclass
@@ -123,7 +144,12 @@ class PasswordManager(LoggerMixin):
     """Password hashing and verification."""
     
     def __init__(self):
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        if not PASSLIB_AVAILABLE:
+            self.logger.warning("passlib not available, using basic password handling")
+            self.pwd_context = None
+        else:
+            self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        
         self.validator = PasswordValidator()
     
     def hash_password(self, password: str) -> str:
@@ -133,19 +159,37 @@ class PasswordManager(LoggerMixin):
         if issues:
             raise ValidationError(f"Password validation failed: {', '.join(issues)}")
         
-        hashed = self.pwd_context.hash(password)
-        self.logger.info("Password hashed successfully")
-        return hashed
+        if self.pwd_context:
+            hashed = self.pwd_context.hash(password)
+            self.logger.info("Password hashed successfully")
+            return hashed
+        else:
+            # Fallback to basic hashing (not secure for production)
+            import hashlib
+            hashed = hashlib.sha256(password.encode()).hexdigest()
+            self.logger.warning("Using fallback password hashing - not secure for production")
+            return hashed
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash."""
         try:
-            is_valid = self.pwd_context.verify(plain_password, hashed_password)
-            if is_valid:
-                self.logger.info("Password verification successful")
+            if self.pwd_context:
+                is_valid = self.pwd_context.verify(plain_password, hashed_password)
+                if is_valid:
+                    self.logger.info("Password verification successful")
+                else:
+                    self.logger.warning("Password verification failed")
+                return is_valid
             else:
-                self.logger.warning("Password verification failed")
-            return is_valid
+                # Fallback verification (not secure for production)
+                import hashlib
+                expected_hash = hashlib.sha256(plain_password.encode()).hexdigest()
+                is_valid = expected_hash == hashed_password
+                if is_valid:
+                    self.logger.info("Password verification successful (fallback)")
+                else:
+                    self.logger.warning("Password verification failed (fallback)")
+                return is_valid
         except Exception as e:
             self.logger.error("Password verification error", error=str(e))
             return False
@@ -173,9 +217,18 @@ class JWTManager(LoggerMixin):
     
     def __init__(self):
         self.settings = get_settings()
-        self.secret_key = self.settings.security.secret_key
-        self.algorithm = self.settings.security.algorithm
-        self.access_token_expire_minutes = self.settings.security.access_token_expire_minutes
+        if hasattr(self.settings, 'security'):
+            self.secret_key = self.settings.security.secret_key
+            self.algorithm = self.settings.security.algorithm
+            self.access_token_expire_minutes = self.settings.security.access_token_expire_minutes
+        else:
+            # Fallback settings
+            self.secret_key = self.settings.secret_key
+            self.algorithm = self.settings.jwt_algorithm
+            self.access_token_expire_minutes = self.settings.access_token_expire_minutes
+        
+        if not JWT_AVAILABLE:
+            self.logger.warning("JWT library not available, using fallback token handling")
     
     def create_access_token(
         self, 
@@ -201,9 +254,18 @@ class JWTManager(LoggerMixin):
         }
         
         try:
-            token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
-            self.logger.info("Access token created", user_id=user_id, expires=expire.isoformat())
-            return token
+            if JWT_AVAILABLE:
+                token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+                self.logger.info("Access token created", user_id=user_id, expires=expire.isoformat())
+                return token
+            else:
+                # Fallback: create a simple base64 encoded token (NOT secure for production)
+                import base64
+                import json
+                token_data = json.dumps(payload, default=str)
+                token = base64.b64encode(token_data.encode()).decode()
+                self.logger.warning("Using fallback token creation - not secure for production")
+                return token
         except Exception as e:
             self.logger.error("Token creation failed", error=str(e))
             raise AuthenticationError(f"Token creation failed: {str(e)}")
@@ -211,13 +273,28 @@ class JWTManager(LoggerMixin):
     def verify_token(self, token: str) -> TokenData:
         """Verify and decode a JWT token."""
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            if JWT_AVAILABLE:
+                payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            else:
+                # Fallback: decode base64 token (NOT secure for production)
+                import base64
+                import json
+                token_data = base64.b64decode(token.encode()).decode()
+                payload = json.loads(token_data)
+                self.logger.warning("Using fallback token verification - not secure for production")
             
             user_id = payload.get("sub")
             username = payload.get("username")
             email = payload.get("email")
             scopes = payload.get("scopes", [])
-            exp = datetime.fromtimestamp(payload.get("exp"))
+            exp_timestamp = payload.get("exp")
+            
+            # Handle different datetime formats
+            if isinstance(exp_timestamp, str):
+                from datetime import datetime
+                exp = datetime.fromisoformat(exp_timestamp.replace('Z', '+00:00'))
+            else:
+                exp = datetime.fromtimestamp(exp_timestamp)
             
             if not user_id or not username or not email:
                 raise AuthenticationError("Invalid token payload")
@@ -337,7 +414,11 @@ class RateLimiter(LoggerMixin):
 
 
 # Security dependency for FastAPI
-security = HTTPBearer()
+if FASTAPI_AVAILABLE:
+    security = HTTPBearer()
+else:
+    security = None
+
 jwt_manager = JWTManager()
 password_manager = PasswordManager()
 input_validator = InputValidator()
@@ -345,28 +426,41 @@ api_key_manager = APIKeyManager()
 rate_limiter = RateLimiter()
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> TokenData:
-    """FastAPI dependency to get current authenticated user."""
-    try:
-        token_data = jwt_manager.verify_token(credentials.credentials)
-        return token_data
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+if FASTAPI_AVAILABLE:
+    async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> TokenData:
+        """FastAPI dependency to get current authenticated user."""
+        try:
+            token_data = jwt_manager.verify_token(credentials.credentials)
+            return token_data
+        except AuthenticationError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(e),
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
 
-async def require_scopes(required_scopes: List[str]):
-    """FastAPI dependency to require specific scopes."""
-    def scope_checker(current_user: TokenData = Depends(get_current_user)) -> TokenData:
-        for scope in required_scopes:
-            if scope not in current_user.scopes:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Not enough permissions. Required scope: {scope}"
-                )
-        return current_user
+    async def require_scopes(required_scopes: List[str]):
+        """FastAPI dependency to require specific scopes."""
+        def scope_checker(current_user: TokenData = Depends(get_current_user)) -> TokenData:
+            for scope in required_scopes:
+                if scope not in current_user.scopes:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Not enough permissions. Required scope: {scope}"
+                    )
+            return current_user
+        
+        return scope_checker
+
+else:
+    # Fallback functions when FastAPI is not available
+    def get_current_user(*args, **kwargs):
+        """Fallback function when FastAPI is not available."""
+        raise NotImplementedError("FastAPI not available - cannot use authentication dependencies")
     
-    return scope_checker
+    def require_scopes(required_scopes: List[str]):
+        """Fallback function when FastAPI is not available."""
+        def scope_checker(*args, **kwargs):
+            raise NotImplementedError("FastAPI not available - cannot use scope checking")
+        return scope_checker

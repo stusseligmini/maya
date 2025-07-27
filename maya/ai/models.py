@@ -2,10 +2,27 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
-import openai
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
-import torch
-from PIL import Image
+
+# Try to import AI libraries with fallback handling
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+try:
+    from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
+    import torch
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+
 import io
 import base64
 
@@ -37,6 +54,9 @@ class OpenAIIntegration(BaseAIModel):
     
     def __init__(self, model_name: str = "gpt-3.5-turbo"):
         super().__init__(model_name)
+        
+        if not OPENAI_AVAILABLE:
+            raise ConfigurationError("OpenAI library not available. Install with: pip install openai")
         
         if not self.settings.ai.openai_api_key:
             raise ConfigurationError("OpenAI API key not configured")
@@ -111,6 +131,9 @@ class HuggingFaceIntegration(BaseAIModel):
     
     def __init__(self, model_name: str = "cardiffnlp/twitter-roberta-base-sentiment-latest"):
         super().__init__(model_name)
+        
+        if not TRANSFORMERS_AVAILABLE:
+            raise ConfigurationError("Transformers library not available. Install with: pip install transformers torch")
         
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)

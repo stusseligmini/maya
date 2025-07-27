@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Maya AI Content System
 
 # Build stage
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -28,7 +28,7 @@ RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
 # Production stage
-FROM python:3.11-slim as production
+FROM python:3.11-slim AS production
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
