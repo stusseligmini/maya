@@ -82,6 +82,8 @@ logs/
 # Temporary files
 tmp/
 temp/
+test_basic.py
+FIXED_ISSUES.md
 
 # Configuration files with secrets
 config/secrets.yml
