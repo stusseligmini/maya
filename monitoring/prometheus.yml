@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'maya-api'
+    static_configs:
+      - targets: ['maya-api:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+
+  #  - job_name: 'n8n'
+  #    static_configs:
+  #      - targets: ['n8n:5678']
+  # If you want to monitor n8n, configure a Prometheus exporter or enable metrics in n8n and update this section accordingly.

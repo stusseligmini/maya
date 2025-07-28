@@ -1,19 +1,157 @@
 version: '3.8'
 
+services:
+  # Main application service
+  maya-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: development
+    ports:
+      - "8080:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://maya:maya@postgres:5432/maya
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - maya-network
 
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: maya
+      POSTGRES_USER: maya
+      POSTGRES_PASSWORD: maya
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - maya-network
+
+  # Redis for caching and task queue
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - maya-network
+
+  # Celery worker for background tasks
+  celery-worker:
+    build:
+      context: .
+      target: development
+    command: celery -A app.tasks worker --loglevel=info
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://maya:maya@postgres:5432/maya
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - maya-network
+
+  # Celery beat for scheduled tasks
+  celery-beat:
+    build:
+      context: .
+      target: development
+    command: celery -A app.tasks beat --loglevel=info
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://maya:maya@postgres:5432/maya
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - maya-network
+
+  # Nginx reverse proxy (for production)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - maya-api
+    restart: unless-stopped
+    networks:
+      - maya-network
+    profiles:
+      - production
+
+  # n8n for workflow automation
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=maya
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - WEBHOOK_URL=http://maya-api:8000
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=maya
+      - DB_POSTGRESDB_PASSWORD=maya
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+    depends_on:
+      - postgres
+      - maya-api
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+    networks:
+      - maya-network
+
+  # Prometheus for monitoring
   prometheus:
     image: prom/prometheus:latest
     ports:
       - "9090:9090"
     volumes:
-
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - maya-network
+    profiles:
+      - monitoring
 
+  # Grafana for visualization
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -22,10 +160,20 @@ version: '3.8'
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
-
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    restart: unless-stopped
+    networks:
+      - maya-network
+    profiles:
+      - monitoring
 
 volumes:
   postgres_data:
   redis_data:
   prometheus_data:
+  grafana_data:
+  n8n_data:
 
+networks:
+  maya-network:
+    driver: bridge
