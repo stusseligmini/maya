@@ -47,3 +47,6 @@ main
 # Temporary files
 tmp/
 temp/
+.gitignore
+__pycache__/
+*.pyc
