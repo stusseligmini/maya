@@ -1,41 +1,99 @@
-# 🚀 Maya - AI Content Optimization for Social Platforms
+# 🚀 Maya AI - Content Optimization System
+
+> AI-powered content creation and social media management platform with mobile PWA support
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/stusseligmini/maya)
 
 ## 📖 Overview
 
-Maya is an advanced AI system for optimizing content across social media platforms. It uses machine learning to analyze, enhance, and schedule content for maximum engagement.
+Maya AI is an advanced AI-powered content optimization system designed for social media creators and businesses. It combines machine learning, automated content generation, and multi-platform publishing capabilities with a modern Progressive Web App (PWA) interface.
 
 ## 🌟 Key Features
 
 ### 🤖 AI-Powered Content Creation
-- **Image Generation**: Integration with Fooocus for high-quality AI images
-- **Caption Generation**: OpenAI GPT-powered captions optimized per platform
-- **Content Analysis**: Sentiment analysis and engagement prediction
-- **Keyword Extraction**: Automatic SEO keyword identification
+- **Image Generation**: Integration with Fooocus and AI models for high-quality visuals
+- **Smart Caption Generation**: OpenAI GPT-powered captions optimized for each platform
+- **Content Enhancement**: Automatic image optimization and text refinement
+- **Hashtag Intelligence**: AI-generated relevant hashtags for maximum reach
 
-### 📱 Multi-Platform Publishing
-- **Instagram**: Images, videos, carousels with optimized hashtags
-- **TikTok**: Short-form video content with trending captions
+### 📱 Progressive Web App (PWA)
+- **Mobile Installation**: Install as native app on iOS/Android devices
+- **Offline Support**: Content creation works without internet connection
+- **Touch Optimized**: Mobile-first responsive design
+- **Push Notifications**: Real-time content status updates
+- **Cross-Platform**: Works on desktop, tablet, and mobile
+
+### � Multi-Platform Publishing
+- **Instagram**: Photos, Stories, Reels with optimal timing
+- **TikTok**: Short-form videos with trending hashtags
 - **Twitter**: Text and media posts with character optimization
-- **Fanvue**: Professional content for content creators
-- **Snapchat**: Casual, engaging content
+- **Fanvue**: Creator-focused content distribution
+- **Snapchat**: Engaging stories and snaps
 
-### 🔍 Content Moderation
-- **NSFW Detection**: Automatic inappropriate content filtering
-- **Emotion Analysis**: Content sentiment and tone analysis
-- **Quality Checks**: Image quality and content appropriateness
-- **Manual Review**: Telegram bot integration for human oversight
+### 🔍 Content Moderation & Safety
+- **AI Safety Scoring**: Automatic content appropriateness detection
+- **NSFW Detection**: Advanced filtering for inappropriate content
+- **Telegram Review**: Human oversight through bot integration
+- **Quality Assurance**: Automated image and text quality checks
 
 ### 🔄 Automated Workflow
 - **Background Processing**: Celery-powered async task processing
-- **Queue Management**: Priority-based content processing
-- **Scheduling**: Time-optimized content publishing
-- **Monitoring**: Real-time system health and performance metrics
+- **Smart Queue Management**: Priority-based content processing
+- **Real-time Analytics**: Performance tracking and insights
+- **Auto-posting**: Scheduled content distribution
 
-### 🤖 Telegram Integration
+### 💬 Telegram Integration
 - **Review Workflow**: Human review via Telegram bot
-- **Approval Process**: Approve/reject content with one click
+- **One-click Approval**: Approve/reject content instantly
 - **Content Editing**: Edit captions and regenerate content
-- **Status Updates**: Real-time notifications
+- **Status Notifications**: Real-time updates and alerts
+
+## 🚀 Quick Start
+
+### 🌐 Deploy to Render (Recommended)
+
+**One-Click Deploy**: 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/stusseligmini/maya)
+
+**Manual Setup**:
+```bash
+git clone https://github.com/stusseligmini/maya.git
+cd maya
+# Follow RENDER_DEPLOYMENT_GUIDE.md for complete setup
+```
+
+### 📱 Install Mobile PWA
+
+After deployment, install Maya AI as a mobile app:
+
+**iPhone (iOS):**
+1. Open **Safari** → `https://your-app.onrender.com/app`
+2. Tap **Share** (□↑) → **"Add to Home Screen"**
+3. Maya AI installs as native iOS app! 🍎
+
+**Android:**
+1. Open **Chrome** → `https://your-app.onrender.com/app`
+2. Tap **"Add to Home screen"** banner
+3. Maya AI installs as Android app! 🤖
+
+### 🔧 Local Development
+
+```bash
+# Clone repository
+git clone https://github.com/stusseligmini/maya.git
+cd maya
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start development server
+python main.py
+
+# Access application
+# Web: http://localhost:8000
+# Mobile PWA: http://localhost:8000/app
+# API Docs: http://localhost:8000/docs
+```
 
 ## 🏗️ Architecture
 
