@@ -8,36 +8,21 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import structlog
 import sys
 import os
+import logging
 
 # Add the current directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config.settings import get_settings
-from app.api import api_router
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
-    ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
+# Use standard logging for now, will upgrade to structlog later
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-
-logger = structlog.get_logger()
+logger = logging.getLogger(__name__)
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
@@ -61,7 +46,12 @@ def create_app() -> FastAPI:
     )
     
     # Include API routes
-    app.include_router(api_router)
+    try:
+        from app.api import api_router
+        app.include_router(api_router)
+        logger.info("API router loaded successfully")
+    except ImportError as e:
+        logger.warning(f"Could not import API router: {e}")
     
     # Health check endpoint
     @app.get("/health")
@@ -83,7 +73,7 @@ def create_app() -> FastAPI:
     # Global exception handler
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
-        logger.error("Unhandled exception", exc_info=exc, path=str(request.url))
+        logger.error(f"Unhandled exception: {exc}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"}
@@ -98,10 +88,7 @@ if __name__ == "__main__":
     settings = get_settings()
     
     logger.info(
-        "Starting Maya AI Content Optimization service",
-        host=settings.HOST,
-        port=settings.PORT,
-        debug=settings.DEBUG
+        f"Starting Maya AI Content Optimization service on {settings.HOST}:{settings.PORT}"
     )
     
     uvicorn.run(
