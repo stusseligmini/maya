@@ -270,12 +270,83 @@ async def analyze_content(text: str):
         "overall_score": (content_analysis["readability_score"] + abs(sentiment_analysis["sentiment_score"])) // 2
     }
 
-# Include route modules when they become available
-# This will be uncommented as we implement each module
-# try:
-#     from app.api import auth, content, ai
-#     api_router.include_router(auth.router)
-#     api_router.include_router(content.router)
-#     api_router.include_router(ai.router)
-# except ImportError:
-#     pass
+# Telegram Bot Command Request Model
+class BotCommandRequest(BaseModel):
+    command: str
+    chat_id: int
+    args: List[str] = []
+
+# Telegram Bot Endpoints
+@api_router.post("/bot/command")
+async def handle_bot_command(request: BotCommandRequest):
+    """Handle Telegram bot commands"""
+    from app.services.telegram_bot import get_telegram_bot
+    
+    bot = get_telegram_bot()
+    result = bot.handle_command(request.command, request.chat_id, request.args)
+    
+    return result
+
+@api_router.post("/bot/notify")
+async def send_notification(
+    chat_id: int,
+    message: str
+):
+    """Send notification to specific chat"""
+    from app.services.telegram_bot import get_telegram_bot
+    
+    bot = get_telegram_bot()
+    success = await bot.send_notification(chat_id, message)
+    
+    return {
+        "success": success,
+        "chat_id": chat_id,
+        "message_sent": success
+    }
+
+@api_router.post("/bot/broadcast")
+async def broadcast_notification(message: str):
+    """Broadcast notification to all subscribers"""
+    from app.services.telegram_bot import get_telegram_bot
+    
+    bot = get_telegram_bot()
+    sent_count = await bot.broadcast_notification(message)
+    
+    return {
+        "success": True,
+        "subscribers_notified": sent_count,
+        "message": "Broadcast sent successfully"
+    }
+
+@api_router.get("/bot/status")
+async def get_bot_status():
+    """Get Telegram bot status"""
+    from app.services.telegram_bot import get_telegram_bot
+    
+    bot = get_telegram_bot()
+    
+    return {
+        "bot_running": bot.is_running,
+        "subscriber_count": bot.get_subscriber_count(),
+        "token_configured": bot.token is not None,
+        "status": "operational" if bot.is_running else "stopped"
+    }
+
+@api_router.post("/bot/alert")
+async def send_alert(
+    alert_type: str,
+    message: str,
+    severity: str = "info"
+):
+    """Send system alert via Telegram bot"""
+    from app.services.telegram_bot import get_telegram_bot
+    
+    bot = get_telegram_bot()
+    await bot.send_alert(alert_type, message, severity)
+    
+    return {
+        "success": True,
+        "alert_type": alert_type,
+        "severity": severity,
+        "message": "Alert sent successfully"
+    }

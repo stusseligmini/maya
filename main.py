@@ -67,17 +67,67 @@ def create_app() -> FastAPI:
             "service": "Maya - AI Content Optimization",
             "version": "1.0.0",
             "status": "running",
-            "docs": "/docs" if settings.DEBUG else "disabled"
+            "docs": "/docs" if settings.DEBUG else "disabled",
+            "features": [
+                "AI Content Processing",
+                "Sentiment Analysis", 
+                "Content Generation",
+                "Platform Optimization",
+                "Telegram Bot Integration"
+            ]
         }
     
     # Global exception handler
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
         logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        
+        # Send alert via Telegram bot if configured
+        try:
+            from app.services.telegram_bot import get_telegram_bot
+            bot = get_telegram_bot()
+            if bot.is_running:
+                await bot.send_alert(
+                    "System Error",
+                    f"Unhandled exception in API: {str(exc)[:100]}...",
+                    "error"
+                )
+        except Exception as bot_error:
+            logger.error(f"Failed to send Telegram alert: {bot_error}")
+        
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"}
         )
+    
+    # Startup event
+    @app.on_event("startup")
+    async def startup_event():
+        """Initialize services on startup"""
+        logger.info("Maya AI Content Optimization starting up...")
+        
+        # Initialize Telegram bot
+        try:
+            from app.services.telegram_bot import start_telegram_bot
+            telegram_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', None)
+            await start_telegram_bot(telegram_token)
+            logger.info("Telegram bot initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Telegram bot: {e}")
+    
+    # Shutdown event
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        """Cleanup on shutdown"""
+        logger.info("Maya AI Content Optimization shutting down...")
+        
+        # Stop Telegram bot
+        try:
+            from app.services.telegram_bot import stop_telegram_bot
+            await stop_telegram_bot()
+            logger.info("Telegram bot stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping Telegram bot: {e}")
     
     logger.info("FastAPI application created successfully")
     return app
