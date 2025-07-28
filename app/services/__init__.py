@@ -1,6 +1,11 @@
-"""Services package"""
+"""AI services package for Maya AI Content Optimization"""
 
-from .ai_service import get_ai_service, AI_SERVICES
-from .content_service import content_processor, platform_optimizer
+from .content_processor import ContentProcessor
+from .sentiment_analyzer import SentimentAnalyzer
+from .content_generator import ContentGenerator
 
-__all__ = ["get_ai_service", "AI_SERVICES", "content_processor", "platform_optimizer"]
+__all__ = [
+    'ContentProcessor',
+    'SentimentAnalyzer', 
+    'ContentGenerator'
+]

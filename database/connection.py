@@ -6,12 +6,12 @@ from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
-import structlog
+import logging
 from typing import Generator
 
 from config.settings import get_settings
 
-logger = structlog.get_logger()
+logger = logging.getLogger(__name__)
 
 # Get settings
 settings = get_settings()
@@ -21,7 +21,7 @@ if settings.DATABASE_URL.startswith("sqlite"):
     # SQLite specific configuration
     engine = create_engine(
         settings.DATABASE_URL,
-        echo=settings.DATABASE_ECHO,
+        echo=getattr(settings, 'DATABASE_ECHO', False),
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
@@ -29,7 +29,7 @@ else:
     # PostgreSQL and other databases
     engine = create_engine(
         settings.DATABASE_URL,
-        echo=settings.DATABASE_ECHO,
+        echo=getattr(settings, 'DATABASE_ECHO', False),
         pool_pre_ping=True,
         pool_recycle=3600,
     )
@@ -53,7 +53,7 @@ def get_db() -> Generator[Session, None, None]:
     try:
         yield db
     except Exception as e:
-        logger.error("Database session error", exc_info=e)
+        logger.error(f"Database session error: {e}", exc_info=e)
         db.rollback()
         raise
     finally:
@@ -70,7 +70,7 @@ def init_db():
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
     except Exception as e:
-        logger.error("Failed to initialize database", exc_info=e)
+        logger.error(f"Failed to initialize database: {e}", exc_info=e)
         raise
 
 
@@ -80,7 +80,7 @@ def close_db():
         engine.dispose()
         logger.info("Database connections closed")
     except Exception as e:
-        logger.error("Error closing database connections", exc_info=e)
+        logger.error(f"Error closing database connections: {e}", exc_info=e)
 
 
 # Health check function
@@ -88,8 +88,11 @@ def check_db_health() -> bool:
     """Check database connectivity"""
     try:
         with engine.connect() as connection:
-            connection.execute("SELECT 1")
+            if settings.DATABASE_URL.startswith("sqlite"):
+                connection.execute("SELECT 1")
+            else:
+                connection.execute("SELECT 1")
         return True
     except Exception as e:
-        logger.error("Database health check failed", exc_info=e)
+        logger.error(f"Database health check failed: {e}", exc_info=e)
         return False

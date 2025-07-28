@@ -13,7 +13,7 @@ settings = get_settings()
 # Create SQLAlchemy engine
 engine = create_engine(
     settings.DATABASE_URL,
-    echo=settings.DATABASE_ECHO if hasattr(settings, 'DATABASE_ECHO') else False,
+    echo=getattr(settings, 'DATABASE_ECHO', False),
 )
 
 # Create SessionLocal class
