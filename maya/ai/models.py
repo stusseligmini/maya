@@ -58,11 +58,11 @@ class OpenAIIntegration(BaseAIModel):
         if not OPENAI_AVAILABLE:
             raise ConfigurationError("OpenAI library not available. Install with: pip install openai")
         
-        if not self.settings.ai.openai_api_key:
+        if not self.settings.OPENAI_API_KEY:
             raise ConfigurationError("OpenAI API key not configured")
         
-        openai.api_key = self.settings.ai.openai_api_key
-        self.client = openai.OpenAI(api_key=self.settings.ai.openai_api_key)
+        openai.api_key = self.settings.OPENAI_API_KEY
+        self.client = openai.OpenAI(api_key=self.settings.OPENAI_API_KEY)
     
     async def generate_content(self, prompt: str, **kwargs) -> str:
         """Generate content using OpenAI GPT."""
@@ -211,7 +211,7 @@ class AIModelManager(LoggerMixin):
         settings = get_settings()
         
         try:
-            if settings.ai.openai_api_key:
+            if settings.OPENAI_API_KEY:
                 self.models["openai"] = OpenAIIntegration()
                 self.logger.info("OpenAI model initialized")
         except Exception as e:

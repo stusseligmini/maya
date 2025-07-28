@@ -64,7 +64,7 @@ def init_db():
     """Initialize database tables"""
     try:
         # Import all models here to ensure they are registered
-        from app.models import user, content, social_platform, ai_model
+        from app.models import User, Content, AIModel, AIProcessingJob
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
