@@ -60,6 +60,32 @@ class Settings(BaseSettings):
     ENABLE_CONTENT_MODERATION: bool = True
     ENABLE_ANALYTICS: bool = True
     
+    # N8n Integration settings
+    N8N_WEBHOOK_URL: Optional[str] = None
+    N8N_API_KEY: Optional[str] = None
+    
+    # Webhook security
+    WEBHOOK_SECRET: Optional[str] = None
+    
+    # File storage settings (for cloud deployment)
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_S3_BUCKET: Optional[str] = None
+    AWS_S3_REGION: str = "us-west-2"
+    
+    # Publishing settings
+    ENABLE_PUBLISHING: bool = True
+    MAX_PLATFORMS_PER_PUBLISH: int = 5
+    MAX_SCHEDULED_JOBS_PER_USER: int = 100
+    
+    # System monitoring
+    ENABLE_SYSTEM_MONITORING: bool = True
+    METRICS_RETENTION_DAYS: int = 30
+    
+    # Rate limiting (for production)
+    RATE_LIMIT_PER_MINUTE: int = 60
+    RATE_LIMIT_BURST: int = 100
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -1,0 +1,129 @@
+services:
+  # Main application service
+  - type: web
+    name: maya-ai-content
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        fromService:
+          type: web
+          name: maya-ai-content
+          property: port
+      - key: DEBUG
+        value: false
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        fromDatabase:
+          name: maya-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: maya-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEBHOOK_SECRET
+        generateValue: true
+    healthCheckPath: /health
+    autoDeploy: false
+
+  # Background worker service for AI processing
+  - type: worker
+    name: maya-worker
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A app.worker worker --loglevel=info
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: maya-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: maya-redis
+          property: connectionString
+      - key: SECRET_KEY
+        sync: false
+    autoDeploy: false
+
+  # Redis service for caching and task queue
+  - type: redis
+    name: maya-redis
+    region: oregon
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # PostgreSQL database
+  - name: maya-postgres
+    region: oregon
+    plan: starter
+    databaseName: maya
+    user: maya_user
+
+# Environment variables for external services
+# These need to be set in the Render dashboard
+envVarGroups:
+  - name: AI_SERVICES
+    envVars:
+      - key: OPENAI_API_KEY
+        value: # Set in Render dashboard
+      - key: HUGGINGFACE_API_KEY
+        value: # Set in Render dashboard
+      - key: RUNWAY_API_KEY
+        value: # Set in Render dashboard
+
+  - name: SOCIAL_MEDIA
+    envVars:
+      - key: INSTAGRAM_CLIENT_ID
+        value: # Set in Render dashboard
+      - key: INSTAGRAM_CLIENT_SECRET
+        value: # Set in Render dashboard
+      - key: TWITTER_API_KEY
+        value: # Set in Render dashboard
+      - key: TWITTER_API_SECRET
+        value: # Set in Render dashboard
+      - key: TWITTER_BEARER_TOKEN
+        value: # Set in Render dashboard
+      - key: TIKTOK_CLIENT_ID
+        value: # Set in Render dashboard
+      - key: TIKTOK_CLIENT_SECRET
+        value: # Set in Render dashboard
+
+  - name: N8N_INTEGRATION
+    envVars:
+      - key: N8N_WEBHOOK_URL
+        value: # Set in Render dashboard
+      - key: N8N_API_KEY
+        value: # Set in Render dashboard
+
+  - name: MONITORING
+    envVars:
+      - key: SENTRY_DSN
+        value: # Set in Render dashboard
+
+  - name: FILE_STORAGE
+    envVars:
+      - key: AWS_ACCESS_KEY_ID
+        value: # Set in Render dashboard
+      - key: AWS_SECRET_ACCESS_KEY
+        value: # Set in Render dashboard
+      - key: AWS_S3_BUCKET
+        value: # Set in Render dashboard
+      - key: AWS_S3_REGION
+        value: us-west-2

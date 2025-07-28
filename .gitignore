@@ -44,6 +44,20 @@ venv.bak/
 
 main
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
 # Temporary files
 tmp/
 temp/
