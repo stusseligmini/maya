@@ -2,7 +2,7 @@
 Content management API routes
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -30,20 +30,26 @@ class ContentResponse(BaseModel):
     id: int
     title: str
     description: Optional[str]
-    content_type: ContentType
-    status: ContentStatus
-    ai_enhanced: bool
-    optimization_score: Optional[int]
-    tags: Optional[List[str]]
+    content_type: str
+    status: str
+    original_text: Optional[str]
+    optimized_text: Optional[str]
+    media_urls: Optional[List[str]]
+    hashtags: Optional[List[str]]
+    mentions: Optional[List[str]]
     target_platforms: Optional[List[str]]
-    created_at: str
+    analysis_data: Optional[Dict[str, Any]]
+    recommendations: Optional[List[str]]
+    user_id: int
+    created_at: Optional[str]
     updated_at: Optional[str]
+    published_at: Optional[str]
     
     class Config:
         from_attributes = True
 
 
-@router.post("/", response_model=ContentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_content(
     content_data: ContentCreate,
     current_user: User = Depends(get_current_active_user),
@@ -55,7 +61,7 @@ async def create_content(
         description=content_data.description,
         content_type=content_data.content_type,
         target_platforms=content_data.target_platforms,
-        owner_id=current_user.id
+        user_id=current_user.id
     )
     
     db.add(content)
@@ -63,10 +69,12 @@ async def create_content(
     db.refresh(content)
     
     logger.info("Content created", content_id=content.id, user_id=current_user.id)
-    return ContentResponse.from_orm(content)
+    # Convert to dict to handle datetime serialization
+    content_dict = content.to_dict()
+    return content_dict
 
 
-@router.get("/", response_model=List[ContentResponse])
+@router.get("/")
 async def list_content(
     skip: int = 0,
     limit: int = 100,
@@ -75,10 +83,10 @@ async def list_content(
 ):
     """List user's content"""
     content = db.query(Content).filter(
-        Content.owner_id == current_user.id
+        Content.user_id == current_user.id
     ).offset(skip).limit(limit).all()
     
-    return [ContentResponse.model_validate(item) for item in content]
+    return [item.to_dict() for item in content]
 
 
 @router.get("/{content_id}", response_model=ContentResponse)

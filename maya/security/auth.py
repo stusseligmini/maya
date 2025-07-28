@@ -1,10 +1,15 @@
 """Security utilities for Maya system."""
 
 try:
-    import jwt
+    from jose import jwt, JWTError
     JWT_AVAILABLE = True
 except ImportError:
-    JWT_AVAILABLE = False
+    try:
+        import jwt
+        from jwt import PyJWTError as JWTError
+        JWT_AVAILABLE = True
+    except ImportError:
+        JWT_AVAILABLE = False
 
 try:
     import bcrypt
@@ -217,15 +222,10 @@ class JWTManager(LoggerMixin):
     
     def __init__(self):
         self.settings = get_settings()
-        if hasattr(self.settings, 'security'):
-            self.secret_key = self.settings.security.secret_key
-            self.algorithm = self.settings.security.algorithm
-            self.access_token_expire_minutes = self.settings.security.access_token_expire_minutes
-        else:
-            # Fallback settings
-            self.secret_key = self.settings.secret_key
-            self.algorithm = self.settings.jwt_algorithm
-            self.access_token_expire_minutes = self.settings.access_token_expire_minutes
+        # Use flattened settings structure
+        self.secret_key = self.settings.SECRET_KEY
+        self.algorithm = self.settings.ALGORITHM
+        self.access_token_expire_minutes = self.settings.ACCESS_TOKEN_EXPIRE_MINUTES
         
         if not JWT_AVAILABLE:
             self.logger.warning("JWT library not available, using fallback token handling")
@@ -291,10 +291,11 @@ class JWTManager(LoggerMixin):
             
             # Handle different datetime formats
             if isinstance(exp_timestamp, str):
-                from datetime import datetime
-                exp = datetime.fromisoformat(exp_timestamp.replace('Z', '+00:00'))
+                from datetime import datetime as dt
+                exp = dt.fromisoformat(exp_timestamp.replace('Z', '+00:00'))
             else:
-                exp = datetime.fromtimestamp(exp_timestamp)
+                from datetime import datetime as dt
+                exp = dt.fromtimestamp(exp_timestamp)
             
             if not user_id or not username or not email:
                 raise AuthenticationError("Invalid token payload")
@@ -310,12 +311,13 @@ class JWTManager(LoggerMixin):
             self.logger.info("Token verified successfully", user_id=user_id)
             return token_data
             
-        except jwt.ExpiredSignatureError:
-            self.logger.warning("Token has expired")
-            raise AuthenticationError("Token has expired")
-        except jwt.JWTError as e:
-            self.logger.warning("Token verification failed", error=str(e))
-            raise AuthenticationError("Could not validate token")
+        except Exception as e:
+            if 'expired' in str(e).lower():
+                self.logger.warning("Token has expired")
+                raise AuthenticationError("Token has expired")
+            else:
+                self.logger.warning("Token verification failed", error=str(e))
+                raise AuthenticationError("Could not validate token")
     
     def create_refresh_token(self, user_id: str) -> str:
         """Create a refresh token."""
