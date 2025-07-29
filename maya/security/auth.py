@@ -1,4 +1,12 @@
-"""Security utilities for Maya system."""
+"""
+Authentication and Authorization Module for Maya AI
+
+This module provides all authentication related functionality:
+- Password hashing and verification
+- JWT token creation and validation
+- User authentication
+- Authorization dependencies for FastAPI
+"""
 
 try:
     import jwt
@@ -22,8 +30,8 @@ except ImportError:
     PASSLIB_AVAILABLE = False
 
 try:
-    from fastapi import HTTPException, Depends, status
-    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    from fastapi import HTTPException, Depends, status, Request
+    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
     FASTAPI_AVAILABLE = True
 except ImportError:
     FASTAPI_AVAILABLE = False
@@ -219,7 +227,7 @@ class JWTManager(LoggerMixin):
         self.settings = get_settings()
         if hasattr(self.settings, 'security'):
             self.secret_key = self.settings.security.secret_key
-            self.algorithm = self.settings.security.algorithm
+            self.algorithm = self.settings.security.jwt_algorithm
             self.access_token_expire_minutes = self.settings.security.access_token_expire_minutes
         else:
             # Fallback settings

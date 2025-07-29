@@ -1,0 +1,240 @@
+{
+  "name": "Maya AI Social Media Publishing",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=http://maya-ai:8000/api/integrations/n8n/webhook",
+        "allowUnauthorizedCerts": true,
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": {
+          "action": "process_content",
+          "content_data": {
+            "id": "={{$json.content_id}}",
+            "text": "={{$json.content_text}}",
+            "media_urls": "={{$json.media_urls}}"
+          },
+          "target_platforms": "={{$json.platforms}}",
+          "analyze_with_ai": true
+        }
+      },
+      "name": "Process Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.success}}",
+              "operation": "equal",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "name": "Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        940,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://maya-ai:8000/api/content/{{$json.processed_content.id}}/publish",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "mayaApi",
+        "allowUnauthorizedCerts": true,
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": {
+          "platforms": "={{$json.platforms}}",
+          "schedule_time": "={{$json.schedule_time || $now.toISOString()}}"
+        }
+      },
+      "name": "Publish Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1200,
+        200
+      ],
+      "credentials": {
+        "mayaApi": {
+          "id": "1",
+          "name": "Maya AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://maya-ai:8000/api/content/notification",
+        "allowUnauthorizedCerts": true,
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": {
+          "type": "error",
+          "message": "Error processing content: {{$json.error}}",
+          "content_id": "={{$json.content_id}}",
+          "timestamp": "={{$now.toISOString()}}"
+        }
+      },
+      "name": "Send Error Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-approval",
+        "options": {}
+      },
+      "name": "When Content Approved",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "b0bda996-2759-46d1-9f63-f6e2e7081c2d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.platforms}}",
+              "operation": "exists"
+            }
+          ]
+        }
+      },
+      "name": "Has Platforms?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "platforms",
+              "value": "[\"twitter\", \"instagram\"]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Default Platforms",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        580,
+        460
+      ]
+    }
+  ],
+  "connections": {
+    "Process Content": {
+      "main": [
+        [
+          {
+            "node": "Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success?": {
+      "main": [
+        [
+          {
+            "node": "Publish Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Content Approved": {
+      "main": [
+        [
+          {
+            "node": "Has Platforms?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Platforms?": {
+      "main": [
+        [
+          {
+            "node": "Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Default Platforms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Default Platforms": {
+      "main": [
+        [
+          {
+            "node": "Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e3e70fbf-3cde-44dd-ac2e-30a6de6baee3",
+  "id": "2",
+  "meta": {
+    "instanceId": "b96c32e85b4ac08f6b87cc49a649f16c91b489a42c6c69ff40ebf6e90fd"
+  },
+  "tags": [
+    {
+      "name": "Maya AI",
+      "color": "#c93b05"
+    }
+  ]
+}

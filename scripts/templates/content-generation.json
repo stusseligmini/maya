@@ -1,0 +1,199 @@
+{
+  "name": "Maya AI Content Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://maya-ai:8000/api/integrations/n8n/webhook",
+        "allowUnauthorizedCerts": true,
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": {
+          "action": "generate_content",
+          "prompt": "Create engaging social media content about {{$json.topic}}",
+          "model_type": "openai",
+          "max_tokens": 150,
+          "temperature": 0.7
+        }
+      },
+      "name": "Generate Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.success}}",
+              "operation": "equal",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "name": "Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://maya-ai:8000/api/integrations/n8n/webhook",
+        "allowUnauthorizedCerts": true,
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": {
+          "action": "process_content",
+          "content_data": "={{$json.generated_content}}",
+          "target_platforms": [
+            "twitter",
+            "instagram"
+          ],
+          "analyze_with_ai": true
+        }
+      },
+      "name": "Process Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        920,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://maya-ai:8000/api/content/notification",
+        "allowUnauthorizedCerts": true,
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": {
+          "type": "error",
+          "message": "Error generating content: {{$json.error}}",
+          "timestamp": "={{$now.toISOString()}}"
+        }
+      },
+      "name": "Send Error Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        920,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "topic",
+              "value": "daily productivity tips"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Default Topic",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        20,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Content": {
+      "main": [
+        [
+          {
+            "node": "Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success?": {
+      "main": [
+        [
+          {
+            "node": "Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Default Topic": {
+      "main": [
+        [
+          {
+            "node": "Schedule Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f67a2084-a71d-4e1a-b122-a1bcead36312",
+  "id": "1",
+  "meta": {
+    "instanceId": "b96c32e85b4ac08f6b87cc49a649f16c91b489a42c6c69ff40ebf6e90fd"
+  },
+  "tags": [
+    {
+      "name": "Maya AI",
+      "color": "#c93b05"
+    }
+  ]
+}

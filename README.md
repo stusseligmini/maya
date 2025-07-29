@@ -56,13 +56,19 @@ Maya AI is an advanced AI-powered content optimization system designed for socia
 - Scheduling and publishing workflow
 - Content unpublishing and management
 
-#### 5. **Security** (`maya.security`)
+#### 5. **Workflow Automation** (`maya.api.integrations`)
+- n8n workflow integration for automation
+- Custom n8n nodes and triggers
+- Webhook endpoints for external system integration
+- Task submission API for background processing
+
+#### 6. **Security** (`maya.security`)
 - JWT token management
 - Password hashing and validation
 - Input sanitization and validation
 - Rate limiting and security headers
 
-#### 6. **Monitoring** (`maya.monitoring`)
+#### 7. **Monitoring** (`maya.monitoring`)
 - Prometheus metrics collection
 - Health checks and alerting
 - Performance tracking
@@ -141,6 +147,7 @@ Maya AI is an advanced AI-powered content optimization system designed for socia
 - **Smart Queue Management**: Priority-based content processing
 - **Real-time Analytics**: Performance tracking and insights
 - **Auto-posting**: Scheduled content distribution
+- **n8n Integration**: Custom nodes for workflow automation
 
 ### 💬 Telegram Integration
 - **Review Workflow**: Human review via Telegram bot

@@ -13,6 +13,7 @@ from maya.content.processor import ContentProcessor, ContentItem, ContentType, P
 from maya.social.platforms import social_manager
 from maya.ai.models import ai_manager
 from maya.security.auth import password_manager, jwt_manager
+from maya.api.integrations import n8n_router
 
 
 @click.group()
@@ -397,6 +398,82 @@ def health(ctx):
         asyncio.run(_health_check())
     except Exception as e:
         ctx.obj['logger'].error(f"Health check failed: {str(e)}")
+        sys.exit(1)
+
+
+@cli.group()
+def n8n():
+    """n8n integration commands."""
+    pass
+
+
+@n8n.command()
+@click.option('--url', default=None, help='n8n instance URL')
+@click.option('--api-key', default=None, help='n8n API key')
+@click.pass_context
+def register(ctx, url, api_key):
+    """Register Maya nodes in n8n."""
+    from scripts.n8n_workflow_manager import register_maya_credential_type
+    
+    # Override settings if provided
+    settings = get_settings()
+    if url:
+        settings.integrations.n8n_base_url = url
+    if api_key:
+        settings.integrations.n8n_api_key = api_key
+    
+    try:
+        result = register_maya_credential_type()
+        if result.get("success"):
+            ctx.obj['logger'].info("Maya nodes registered successfully in n8n")
+        else:
+            ctx.obj['logger'].error(f"Node registration failed: {result.get('error')}")
+            sys.exit(1)
+    except Exception as e:
+        ctx.obj['logger'].error(f"Node registration failed: {str(e)}")
+        sys.exit(1)
+
+
+@n8n.command()
+@click.option('--name', required=True, help='Workflow name')
+@click.option('--template', default='content-generation', 
+              type=click.Choice(['content-generation', 'social-publishing', 'analytics-collection']),
+              help='Workflow template')
+@click.pass_context
+def create_workflow(ctx, name, template):
+    """Create a new n8n workflow from template."""
+    from scripts.n8n_workflow_manager import create_workflow
+    
+    try:
+        result = create_workflow(name, template)
+        if result.get("success"):
+            ctx.obj['logger'].info(f"Workflow '{name}' created successfully from template '{template}'")
+        else:
+            ctx.obj['logger'].error(f"Workflow creation failed: {result.get('error')}")
+            sys.exit(1)
+    except Exception as e:
+        ctx.obj['logger'].error(f"Workflow creation failed: {str(e)}")
+        sys.exit(1)
+
+
+@n8n.command()
+@click.option('--endpoint', default='webhook', help='Endpoint to test')
+@click.option('--payload', default='{}', help='JSON payload to send')
+@click.pass_context
+def test(ctx, endpoint, payload):
+    """Test n8n integration endpoints."""
+    from scripts.n8n_workflow_manager import test_webhook
+    
+    try:
+        result = test_webhook(endpoint, payload)
+        if result.get("success"):
+            ctx.obj['logger'].info(f"Endpoint test successful: {endpoint}")
+            ctx.obj['logger'].info(f"Response: {json.dumps(result.get('response', {}), indent=2)}")
+        else:
+            ctx.obj['logger'].error(f"Endpoint test failed: {result.get('error')}")
+            sys.exit(1)
+    except Exception as e:
+        ctx.obj['logger'].error(f"Endpoint test failed: {str(e)}")
         sys.exit(1)
 
 

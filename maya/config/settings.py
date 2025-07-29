@@ -97,6 +97,21 @@ if PYDANTIC_AVAILABLE:
         
         class Config:
             env_prefix = "MONITORING_"
+    
+    
+    class IntegrationSettings(BaseSettings):
+        """Integration platform settings."""
+        
+        # n8n Integration
+        n8n_webhook_secret: str = Field(default="maya-n8n-secret", env="N8N_WEBHOOK_SECRET")
+        n8n_base_url: str = Field(default="http://n8n:5678", env="N8N_BASE_URL")
+        n8n_api_key: Optional[str] = Field(default=None, env="N8N_API_KEY")
+        
+        # Other integrations can be added here
+        zapier_webhook_url: Optional[str] = Field(default=None, env="ZAPIER_WEBHOOK_URL")
+        
+        class Config:
+            env_prefix = "INTEGRATION_"
 
 
     class Settings(BaseSettings):
@@ -118,6 +133,7 @@ if PYDANTIC_AVAILABLE:
         security: SecuritySettings = SecuritySettings()
         social: SocialPlatformSettings = SocialPlatformSettings()
         monitoring: MonitoringSettings = MonitoringSettings()
+        integrations: IntegrationSettings = IntegrationSettings()
         
         class Config:
             env_file = ".env"
@@ -181,6 +197,16 @@ else:
             self.prometheus_port = int(os.getenv("PROMETHEUS_PORT", "8090"))
             self.log_level = os.getenv("LOG_LEVEL", "INFO")
             self.json_logs = os.getenv("JSON_LOGS", "true").lower() == "true"
+            
+            # Integration settings
+            class IntegrationsNamespace:
+                def __init__(self):
+                    self.n8n_webhook_secret = os.getenv("N8N_WEBHOOK_SECRET", "maya-n8n-secret")
+                    self.n8n_base_url = os.getenv("N8N_BASE_URL", "http://n8n:5678")
+                    self.n8n_api_key = os.getenv("N8N_API_KEY")
+                    self.zapier_webhook_url = os.getenv("ZAPIER_WEBHOOK_URL")
+            
+            self.integrations = IntegrationsNamespace()
     
     # Alias for backward compatibility
     Settings = FallbackSettings
@@ -190,6 +216,7 @@ else:
     SecuritySettings = FallbackSettings
     SocialPlatformSettings = FallbackSettings
     MonitoringSettings = FallbackSettings
+    IntegrationSettings = FallbackSettings
     
     def get_settings() -> FallbackSettings:
         """Get application settings singleton (fallback version)."""
